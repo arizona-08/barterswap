@@ -1,0 +1,12 @@
+services:
+  go-dev:
+    container_name: go-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/home/go
+    ports:
+      - "8080:${PORT}"
+    tty: true
+    stdin_open: true
