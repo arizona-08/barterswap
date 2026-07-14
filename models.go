@@ -1,14 +1,34 @@
 package main
 
-// TestResource is a small example resource used to demonstrate the API layers.
-type TestResource struct {
-	Message string `json:"message"`
-	Status  string `json:"status"`
+type User struct {
+	ID            int     `json:"id"`
+	Pseudo        string  `json:"pseudo"`
+	Bio           string  `json:"bio,omitempty"`
+	Ville         string  `json:"ville,omitempty"`
+	Skills        []Skill `json:"skills,omitempty"`
+	CreditBalance int     `json:"credit_balance"`
+	CreatedAt     string  `json:"created_at"`
 }
 
-// PatchTestInput contains the fields accepted by PATCH /api/test.
-type PatchTestInput struct {
-	Message *string `json:"message"`
+type Skill struct {
+	Nom    string `json:"nom"`
+	Niveau string `json:"niveau"`
+}
+
+type CreateUserInput struct {
+	Pseudo string `json:"pseudo"`
+	Bio    string `json:"bio"`
+	Ville  string `json:"ville"`
+}
+
+type UpdateUserInput struct {
+	Pseudo string `json:"pseudo"`
+	Bio    string `json:"bio"`
+	Ville  string `json:"ville"`
+}
+
+type ReplaceSkillsInput struct {
+	Skills []Skill `json:"skills"`
 }
 
 type ErrorResponse struct {

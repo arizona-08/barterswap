@@ -1,55 +1,56 @@
-# BarterSwap — mini setup
+# BarterSwap — API d'échange de compétences
 
-Ce squelette respecte les premières contraintes de l'énoncé : Go, bibliothèque
-standard uniquement, un seul package et séparation entre exposition HTTP
-(`handlers.go`) et logique métier (`service.go`). Il ne branche pas encore la
-base de données.
+API REST écrite en Go avec `net/http`, `database/sql` et PostgreSQL. La partie actuellement implémentée couvre la gestion des utilisateurs et de leurs compétences.
 
-
-L'API écoute par défaut sur `http://localhost:8080`. La variable `PORT` permet
-de changer le port.
-
-## Environnement de développement Docker
+## Lancement avec Docker
 
 ```bash
-# pour construire l'image
 docker compose up --build -d
+docker compose exec go-dev go run .
 ```
 
-```bash
-# pour compiler et lancer l'API
-docker exec -it go-dev go run .
-```
+L'API écoute sur `http://localhost:8080`. Le schéma PostgreSQL est créé automatiquement au démarrage.
+
+## Endpoints utilisateurs
+
+| Méthode | Route | Description | Authentification |
+|---|---|---|---|
+| `POST` | `/api/users` | Créer un utilisateur avec 10 crédits | Non |
+| `GET` | `/api/users/{id}` | Consulter un profil public | Non |
+| `PUT` | `/api/users/{id}` | Remplacer les informations du profil | `X-User-ID` |
+| `GET` | `/api/users/{id}/skills` | Consulter les compétences | Non |
+| `PUT` | `/api/users/{id}/skills` | Remplacer toutes les compétences | `X-User-ID` |
+
+## Exemples
 
 ```bash
-# pour compiler seulement
-# important de mettre le code complilé dans le dossier build pour qu'il reste dans le .gitignore
-docker exec -it go-dev go build -o build/
-```
-
-## Routes d'exemple
-
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/api/test` | Vérifie que l'API répond |
-| `PATCH` | `/api/test` | Montre la lecture et la validation d'un JSON |
-
-```bash
-curl http://localhost:8080/api/test
-```
-
-```bash
-curl -X PATCH http://localhost:8080/api/test \
+curl -X POST http://localhost:8080/api/users \
   -H 'Content-Type: application/json' \
-  -d '{"message":"Hello BarterSwap"}'
+  -d '{"pseudo":"Alice","bio":"Passionnée de jardinage","ville":"Paris"}'
 ```
 
-Le `PATCH` est volontairement sans persistance : il sert uniquement de modèle
-pour les futures routes. L'équipe peut reprendre le même découpage modèle,
-service et handler pour chaque domaine métier.
+```bash
+curl http://localhost:8080/api/users/1
+```
+
+```bash
+curl -X PUT http://localhost:8080/api/users/1 \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-ID: 1' \
+  -d '{"pseudo":"Alice","bio":"Jardinière amateure","ville":"Lyon"}'
+```
+
+```bash
+curl -X PUT http://localhost:8080/api/users/1/skills \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-ID: 1' \
+  -d '{"skills":[{"nom":"Jardinage","niveau":"expert"},{"nom":"Cuisine","niveau":"intermédiaire"}]}'
+```
+
+Les niveaux autorisés sont `débutant`, `intermédiaire` et `expert`. Chaque `PUT` sur les compétences remplace la liste précédente.
 
 ## Tests
 
 ```bash
-go test ./...
+docker compose exec go-dev go test -v -cover ./...
 ```
