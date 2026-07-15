@@ -1,38 +1,93 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"strings"
 )
 
-var ErrEmptyMessage = errors.New("message must not be empty")
+const welcomeCredits = 10
 
-// TestService contains the business logic independently from HTTP.
-type TestService struct{}
+var (
+	ErrUserNotFound    = errors.New("user not found")
+	ErrEmptyPseudo     = errors.New("pseudo must not be empty")
+	ErrInvalidSkill    = errors.New("skill name must not be empty")
+	ErrInvalidLevel    = errors.New("niveau must be débutant, intermédiaire or expert")
+	ErrUnauthenticated = errors.New("missing or invalid X-User-ID header")
+	ErrForbidden       = errors.New("you can only modify your own profile")
+)
 
-func NewTestService() *TestService {
-	return &TestService{}
+type UserStore interface {
+	CreateUser(context.Context, CreateUserInput, int) (User, error)
+	GetUser(context.Context, int) (User, error)
+	UpdateUser(context.Context, int, UpdateUserInput) (User, error)
+	GetSkills(context.Context, int) ([]Skill, error)
+	ReplaceSkills(context.Context, int, []Skill) ([]Skill, error)
 }
 
-func (s *TestService) Get() TestResource {
-	return TestResource{
-		Message: "BarterSwap API is ready",
-		Status:  "ok",
-	}
+type UserService struct {
+	store UserStore
 }
 
-func (s *TestService) Patch(input PatchTestInput) (TestResource, error) {
-	resource := s.Get()
-	if input.Message == nil {
-		return resource, nil
-	}
+func NewUserService(store UserStore) *UserService {
+	return &UserService{store: store}
+}
 
-	message := strings.TrimSpace(*input.Message)
-	if message == "" {
-		return TestResource{}, ErrEmptyMessage
+func (s *UserService) Create(ctx context.Context, input CreateUserInput) (User, error) {
+	input.Pseudo = strings.TrimSpace(input.Pseudo)
+	input.Bio = strings.TrimSpace(input.Bio)
+	input.Ville = strings.TrimSpace(input.Ville)
+	if input.Pseudo == "" {
+		return User{}, ErrEmptyPseudo
 	}
+	return s.store.CreateUser(ctx, input, welcomeCredits)
+}
 
-	resource.Message = message
-	resource.Status = "updated"
-	return resource, nil
+func (s *UserService) Get(ctx context.Context, id int) (User, error) {
+	user, err := s.store.GetUser(ctx, id)
+	if err != nil {
+		return User{}, err
+	}
+	skills, err := s.store.GetSkills(ctx, id)
+	if err != nil {
+		return User{}, err
+	}
+	user.Skills = skills
+	return user, nil
+}
+
+func (s *UserService) Update(ctx context.Context, authenticatedID, id int, input UpdateUserInput) (User, error) {
+	if authenticatedID != id {
+		return User{}, ErrForbidden
+	}
+	input.Pseudo = strings.TrimSpace(input.Pseudo)
+	input.Bio = strings.TrimSpace(input.Bio)
+	input.Ville = strings.TrimSpace(input.Ville)
+	if input.Pseudo == "" {
+		return User{}, ErrEmptyPseudo
+	}
+	return s.store.UpdateUser(ctx, id, input)
+}
+
+func (s *UserService) Skills(ctx context.Context, id int) ([]Skill, error) {
+	return s.store.GetSkills(ctx, id)
+}
+
+func (s *UserService) ReplaceSkills(ctx context.Context, authenticatedID, id int, skills []Skill) ([]Skill, error) {
+	if authenticatedID != id {
+		return nil, ErrForbidden
+	}
+	for i := range skills {
+		skills[i].Nom = strings.TrimSpace(skills[i].Nom)
+		skills[i].Niveau = strings.ToLower(strings.TrimSpace(skills[i].Niveau))
+		if skills[i].Nom == "" {
+			return nil, ErrInvalidSkill
+		}
+		switch skills[i].Niveau {
+		case "débutant", "intermédiaire", "expert":
+		default:
+			return nil, ErrInvalidLevel
+		}
+	}
+	return s.store.ReplaceSkills(ctx, id, skills)
 }
