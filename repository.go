@@ -26,12 +26,43 @@ func migrate(ctx context.Context, db *sql.DB) error {
 			credit_balance INTEGER NOT NULL DEFAULT 10 CHECK (credit_balance >= 0),
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
-		CREATE TABLE IF NOT EXISTS user_skills (
-			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			nom TEXT NOT NULL,
-			niveau TEXT NOT NULL CHECK (niveau IN ('débutant', 'intermédiaire', 'expert')),
-			PRIMARY KEY (user_id, nom)
-		);`
+			CREATE TABLE IF NOT EXISTS user_skills (
+				user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				nom TEXT NOT NULL,
+				niveau TEXT NOT NULL CHECK (niveau IN ('débutant', 'intermédiaire', 'expert')),
+				PRIMARY KEY (user_id, nom)
+			);
+			CREATE TABLE IF NOT EXISTS services (
+				id SERIAL PRIMARY KEY,
+				provider_id INTEGER NOT NULL REFERENCES users(id),
+				titre TEXT NOT NULL,
+				description TEXT NOT NULL DEFAULT '',
+				categorie TEXT NOT NULL,
+				duree_minutes INTEGER NOT NULL CHECK (duree_minutes > 0),
+				credits INTEGER NOT NULL CHECK (credits > 0),
+				ville TEXT NOT NULL DEFAULT '',
+				actif BOOLEAN NOT NULL DEFAULT TRUE,
+				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+			);
+			CREATE TABLE IF NOT EXISTS exchanges (
+				id SERIAL PRIMARY KEY,
+				service_id INTEGER NOT NULL REFERENCES services(id),
+				requester_id INTEGER NOT NULL REFERENCES users(id),
+				owner_id INTEGER NOT NULL REFERENCES users(id),
+				status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'rejected', 'cancelled', 'completed')),
+				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+				updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+			);
+			CREATE TABLE IF NOT EXISTS credit_transactions (
+				id SERIAL PRIMARY KEY,
+				user_id INTEGER NOT NULL REFERENCES users(id),
+				exchange_id INTEGER REFERENCES exchanges(id),
+				montant INTEGER NOT NULL,
+				type TEXT NOT NULL CHECK (type IN ('earn', 'spend', 'refund')),
+				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+			);
+			CREATE UNIQUE INDEX IF NOT EXISTS one_active_exchange_per_service
+				ON exchanges(service_id) WHERE status IN ('pending', 'accepted');`
 	if _, err := db.ExecContext(ctx, schema); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}

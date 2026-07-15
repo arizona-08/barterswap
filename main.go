@@ -31,12 +31,26 @@ func main() {
 	}
 
 	userHandler := NewUserHandler(NewUserService(NewSQLUserStore(db)))
+	serviceHandler := NewServiceHandler(NewServiceService(NewSQLServiceStore(db)))
+	exchangeHandler := NewExchangeHandler(NewExchangeService(NewSQLExchangeStore(db)))
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/users", userHandler.Create)
 	mux.HandleFunc("GET /api/users/{id}", userHandler.Get)
 	mux.HandleFunc("PUT /api/users/{id}", userHandler.Update)
 	mux.HandleFunc("GET /api/users/{id}/skills", userHandler.GetSkills)
 	mux.HandleFunc("PUT /api/users/{id}/skills", userHandler.ReplaceSkills)
+	mux.HandleFunc("GET /api/services", serviceHandler.List)
+	mux.HandleFunc("POST /api/services", serviceHandler.Create)
+	mux.HandleFunc("GET /api/services/{id}", serviceHandler.Get)
+	mux.HandleFunc("PUT /api/services/{id}", serviceHandler.Update)
+	mux.HandleFunc("DELETE /api/services/{id}", serviceHandler.Delete)
+	mux.HandleFunc("POST /api/exchanges", exchangeHandler.Create)
+	mux.HandleFunc("GET /api/exchanges", exchangeHandler.List)
+	mux.HandleFunc("GET /api/exchanges/{id}", exchangeHandler.Get)
+	mux.HandleFunc("PUT /api/exchanges/{id}/accept", exchangeHandler.Accept)
+	mux.HandleFunc("PUT /api/exchanges/{id}/reject", exchangeHandler.Reject)
+	mux.HandleFunc("PUT /api/exchanges/{id}/complete", exchangeHandler.Complete)
+	mux.HandleFunc("PUT /api/exchanges/{id}/cancel", exchangeHandler.Cancel)
 
 	server := &http.Server{
 		Addr:              ":" + port,
