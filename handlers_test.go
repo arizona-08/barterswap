@@ -117,6 +117,36 @@ func TestReplaceSkills(t *testing.T) {
 	}
 }
 
+func TestGetUserAndSkills(t *testing.T) {
+	store := &fakeUserStore{user: User{ID: 1, Pseudo: "Alice"}, skills: []Skill{{Nom: "Go", Niveau: "expert"}}}
+	mux := newTestMux(store)
+
+	request := httptest.NewRequest(http.MethodGet, "/api/users/1", nil)
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"pseudo":"Alice"`) {
+		t.Fatalf("unexpected user response: %d %s", response.Code, response.Body.String())
+	}
+
+	request = httptest.NewRequest(http.MethodGet, "/api/users/1/skills", nil)
+	response = httptest.NewRecorder()
+	mux.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"nom":"Go"`) {
+		t.Fatalf("unexpected skills response: %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestDuplicateSkillsAreRejected(t *testing.T) {
+	service := NewUserService(&fakeUserStore{user: User{ID: 1}})
+	_, err := service.ReplaceSkills(context.Background(), 1, 1, []Skill{
+		{Nom: "Go", Niveau: "expert"},
+		{Nom: "Go", Niveau: "débutant"},
+	})
+	if !errors.Is(err, ErrDuplicateSkill) {
+		t.Fatalf("expected duplicate skill error, got %v", err)
+	}
+}
+
 func TestInvalidSkillLevel(t *testing.T) {
 	service := NewUserService(&fakeUserStore{user: User{ID: 1}})
 	_, err := service.ReplaceSkills(context.Background(), 1, 1, []Skill{{Nom: "Go", Niveau: "senior"}})

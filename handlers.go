@@ -134,7 +134,9 @@ func decodeJSON(r *http.Request, destination any) error {
 
 func handleError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, ErrEmptyPseudo), errors.Is(err, ErrInvalidSkill), errors.Is(err, ErrInvalidLevel):
+	case errors.Is(err, ErrEmptyPseudo), errors.Is(err, ErrInvalidSkill), errors.Is(err, ErrDuplicateSkill), errors.Is(err, ErrInvalidLevel),
+		errors.Is(err, ErrInvalidService), errors.Is(err, ErrInvalidCategory), errors.Is(err, ErrProviderLacksSkill),
+		errors.Is(err, ErrInvalidExchangeStatus), errors.Is(err, ErrSelfExchange), errors.Is(err, ErrInsufficientCredits):
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, ErrUnauthenticated):
 		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
@@ -142,6 +144,12 @@ func handleError(w http.ResponseWriter, err error) {
 		writeJSON(w, http.StatusForbidden, ErrorResponse{Error: err.Error()})
 	case errors.Is(err, ErrUserNotFound):
 		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: err.Error()})
+	case errors.Is(err, ErrServiceNotFound), errors.Is(err, ErrExchangeNotFound):
+		writeJSON(w, http.StatusNotFound, ErrorResponse{Error: err.Error()})
+	case errors.Is(err, ErrServiceReserved):
+		writeJSON(w, http.StatusConflict, ErrorResponse{Error: err.Error()})
+	case errors.Is(err, ErrServiceInactive), errors.Is(err, ErrInvalidExchangeState):
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 	default:
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
 	}

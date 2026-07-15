@@ -12,6 +12,7 @@ var (
 	ErrUserNotFound    = errors.New("user not found")
 	ErrEmptyPseudo     = errors.New("pseudo must not be empty")
 	ErrInvalidSkill    = errors.New("skill name must not be empty")
+	ErrDuplicateSkill  = errors.New("skill names must be unique")
 	ErrInvalidLevel    = errors.New("niveau must be débutant, intermédiaire or expert")
 	ErrUnauthenticated = errors.New("missing or invalid X-User-ID header")
 	ErrForbidden       = errors.New("you can only modify your own profile")
@@ -77,12 +78,17 @@ func (s *UserService) ReplaceSkills(ctx context.Context, authenticatedID, id int
 	if authenticatedID != id {
 		return nil, ErrForbidden
 	}
+	seen := make(map[string]bool, len(skills))
 	for i := range skills {
 		skills[i].Nom = strings.TrimSpace(skills[i].Nom)
 		skills[i].Niveau = strings.ToLower(strings.TrimSpace(skills[i].Niveau))
 		if skills[i].Nom == "" {
 			return nil, ErrInvalidSkill
 		}
+		if seen[skills[i].Nom] {
+			return nil, ErrDuplicateSkill
+		}
+		seen[skills[i].Nom] = true
 		switch skills[i].Niveau {
 		case "débutant", "intermédiaire", "expert":
 		default:
