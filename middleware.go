@@ -4,7 +4,15 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"context"
+	"strconv"
 )
+
+type contextKey string
+
+const userIDContextKey contextKey = "userID"
+
+
 
 type statusResponseWriter struct {
 	http.ResponseWriter
@@ -56,6 +64,21 @@ func corsMiddleware(next http.Handler) http.Handler {
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userIDStr := r.Header.Get("X-User-ID")
+		if userIDStr != "" {
+			id, err := strconv.Atoi(userIDStr)
+			if err == nil && id > 0 {
+				ctx := context.WithValue(r.Context(), userIDContextKey, id)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})

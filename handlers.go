@@ -112,8 +112,8 @@ func pathID(w http.ResponseWriter, r *http.Request) (int, bool) {
 }
 
 func authenticatedUserID(r *http.Request) (int, error) {
-	id, err := strconv.Atoi(r.Header.Get("X-User-ID"))
-	if err != nil || id <= 0 {
+	id, ok := r.Context().Value(userIDContextKey).(int)
+	if !ok || id <= 0 {
 		return 0, ErrUnauthenticated
 	}
 	return id, nil
@@ -162,3 +162,4 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
+
