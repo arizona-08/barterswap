@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"strings"
 )
 
 var (
@@ -60,7 +59,7 @@ func (s *ReviewService) Create(ctx context.Context, authorID, exchangeID int, in
 	if exists {
 		return Review{}, ErrReviewAlreadyExists
 	}
-	input.Commentaire = strings.TrimSpace(input.Commentaire)
+	input.Commentaire = sanitizeText(input.Commentaire, 500)
 	return s.reviews.CreateReview(ctx, exchangeID, authorID, targetID, input.Note, input.Commentaire)
 }
 
