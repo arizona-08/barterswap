@@ -153,3 +153,8 @@ docker compose exec go-dev go test -v -cover ./...
 docker compose exec go-dev go vet ./...
 docker compose exec go-dev gofmt -l *.go
 ```
+
+## Documentation de l'API
+
+Vous pouvez consulter la documentation interactive de l'API ici : 
+[Documentation BarterSwap (OpenAPI)](https://pyracantharia.github.io/swaggerBarterswap/)
