@@ -62,7 +62,17 @@ func migrate(ctx context.Context, db *sql.DB) error {
 				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 			);
 			CREATE UNIQUE INDEX IF NOT EXISTS one_active_exchange_per_service
-				ON exchanges(service_id) WHERE status IN ('pending', 'accepted');`
+				ON exchanges(service_id) WHERE status IN ('pending', 'accepted');
+			CREATE TABLE IF NOT EXISTS reviews (
+				id SERIAL PRIMARY KEY,
+				exchange_id INTEGER NOT NULL REFERENCES exchanges(id) ON DELETE CASCADE,
+				author_id INTEGER NOT NULL REFERENCES users(id),
+				target_id INTEGER NOT NULL REFERENCES users(id),
+				note INTEGER NOT NULL CHECK (note BETWEEN 1 AND 5),
+				commentaire TEXT NOT NULL DEFAULT '',
+				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+				UNIQUE (exchange_id, author_id)
+			);`
 	if _, err := db.ExecContext(ctx, schema); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}
@@ -70,10 +80,27 @@ func migrate(ctx context.Context, db *sql.DB) error {
 }
 
 func (s *SQLUserStore) CreateUser(ctx context.Context, input CreateUserInput, credits int) (User, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return User{}, fmt.Errorf("begin create user: %w", err)
+	}
+	defer tx.Rollback()
+
 	const query = `INSERT INTO users (pseudo, bio, ville, credit_balance)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, pseudo, bio, ville, credit_balance, created_at`
-	return scanUser(s.db.QueryRowContext(ctx, query, input.Pseudo, input.Bio, input.Ville, credits))
+	user, err := scanUser(tx.QueryRowContext(ctx, query, input.Pseudo, input.Bio, input.Ville, credits))
+	if err != nil {
+		return User{}, err
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO credit_transactions (user_id, exchange_id, montant, type)
+		VALUES ($1, NULL, $2, 'earn')`, user.ID, credits); err != nil {
+		return User{}, fmt.Errorf("record welcome credits: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return User{}, fmt.Errorf("commit create user: %w", err)
+	}
+	return user, nil
 }
 
 func (s *SQLUserStore) GetUser(ctx context.Context, id int) (User, error) {

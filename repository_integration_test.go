@@ -41,9 +41,12 @@ func TestPostgresServicesAndExchanges(t *testing.T) {
 	users := NewSQLUserStore(db)
 	services := NewSQLServiceStore(db)
 	exchanges := NewSQLExchangeStore(db)
+	reviews := NewSQLReviewStore(db)
 	userService := NewUserService(users)
 	serviceService := NewServiceService(services)
 	exchangeService := NewExchangeService(exchanges)
+	reviewService := NewReviewService(reviews, exchanges, users, services)
+	statsService := NewStatsService(NewSQLStatsStore(db))
 
 	suffix := time.Now().UnixNano()
 	provider, err := userService.Create(ctx, CreateUserInput{Pseudo: fmt.Sprintf("provider-%d", suffix)})
@@ -55,6 +58,7 @@ func TestPostgresServicesAndExchanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
+		_, _ = db.Exec(`DELETE FROM reviews WHERE author_id IN ($1, $2) OR target_id IN ($1, $2)`, provider.ID, requester.ID)
 		_, _ = db.Exec(`DELETE FROM credit_transactions WHERE user_id IN ($1, $2)`, provider.ID, requester.ID)
 		_, _ = db.Exec(`DELETE FROM exchanges WHERE requester_id IN ($1, $2) OR owner_id IN ($1, $2)`, provider.ID, requester.ID)
 		_, _ = db.Exec(`DELETE FROM services WHERE provider_id IN ($1, $2)`, provider.ID, requester.ID)
@@ -131,6 +135,25 @@ func TestPostgresServicesAndExchanges(t *testing.T) {
 	}
 	if balance := userBalance(t, db, provider.ID); balance != 12 {
 		t.Fatalf("expected provider balance 12 after completion, got %d", balance)
+	}
+	if _, err := reviewService.Create(ctx, requester.ID, exchange.ID, CreateReviewInput{Note: 5, Commentaire: "Très bon service"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reviewService.Create(ctx, provider.ID, exchange.ID, CreateReviewInput{Note: 4}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reviewService.ListUserReviews(ctx, provider.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reviewService.ListServiceReviews(ctx, service.ID); err != nil {
+		t.Fatal(err)
+	}
+	providerStats, err := statsService.Get(ctx, provider.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if providerStats.EchangesCompletes != 1 || providerStats.NbAvis != 1 || providerStats.NoteMoyenne != 5 || providerStats.TotalGagne != 12 {
+		t.Fatalf("unexpected provider stats: %#v", providerStats)
 	}
 
 	second, err := serviceService.Create(ctx, provider.ID, CreateServiceInput{

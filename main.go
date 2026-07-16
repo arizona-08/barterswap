@@ -30,9 +30,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	userHandler := NewUserHandler(NewUserService(NewSQLUserStore(db)))
-	serviceHandler := NewServiceHandler(NewServiceService(NewSQLServiceStore(db)))
-	exchangeHandler := NewExchangeHandler(NewExchangeService(NewSQLExchangeStore(db)))
+	userStore := NewSQLUserStore(db)
+	serviceStore := NewSQLServiceStore(db)
+	exchangeStore := NewSQLExchangeStore(db)
+	userHandler := NewUserHandler(NewUserService(userStore))
+	serviceHandler := NewServiceHandler(NewServiceService(serviceStore))
+	exchangeHandler := NewExchangeHandler(NewExchangeService(exchangeStore))
+	reviewHandler := NewReviewHandler(NewReviewService(NewSQLReviewStore(db), exchangeStore, userStore, serviceStore))
+	statsHandler := NewStatsHandler(NewStatsService(NewSQLStatsStore(db)))
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/users", userHandler.Create)
 	mux.HandleFunc("GET /api/users/{id}", userHandler.Get)
@@ -51,10 +56,15 @@ func main() {
 	mux.HandleFunc("PUT /api/exchanges/{id}/reject", exchangeHandler.Reject)
 	mux.HandleFunc("PUT /api/exchanges/{id}/complete", exchangeHandler.Complete)
 	mux.HandleFunc("PUT /api/exchanges/{id}/cancel", exchangeHandler.Cancel)
+	mux.HandleFunc("POST /api/exchanges/{id}/review", reviewHandler.Create)
+	mux.HandleFunc("GET /api/users/{id}/reviews", reviewHandler.ListUser)
+	mux.HandleFunc("GET /api/services/{id}/reviews", reviewHandler.ListService)
+	mux.HandleFunc("GET /api/users/{id}/stats", statsHandler.Get)
+	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(mux)))
 
 	server := &http.Server{
 		Addr:              ":" + port,
-		Handler:           mux,
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
