@@ -1,8 +1,8 @@
 # BarterSwap — API d'échange de compétences
 
 API REST écrite en Go avec `net/http`, `database/sql` et PostgreSQL. Le projet
-couvre actuellement les utilisateurs, les compétences, les annonces de services
-et le cycle de vie des échanges.
+couvre actuellement les utilisateurs, les compétences, les annonces de services,
+les échanges, les crédits, les avis et les statistiques.
 
 ## Lancement avec Docker
 
@@ -21,6 +21,10 @@ Pour arrêter l'environnement :
 docker compose down
 ```
 
+Une collection Postman importable est disponible dans
+`BarterSwap.postman_collection.json`. Elle exécute le parcours complet et
+enregistre automatiquement les IDs créés dans ses variables de collection.
+
 ## Architecture
 
 Le code reste dans un seul package Go, comme demandé dans le sujet :
@@ -30,7 +34,9 @@ handler HTTP → service métier → repository SQL → PostgreSQL
 ```
 
 Les handlers se chargent du JSON et des codes HTTP. Les règles métier sont dans
-les services. Les opérations de crédits utilisent des transactions SQL.
+les services. Les opérations de crédits utilisent des transactions SQL. Le
+serveur utilise aussi des middlewares simples pour le logging, le CORS et la
+récupération des panics.
 
 ## Endpoints utilisateurs
 
@@ -72,6 +78,18 @@ Le cycle normal est `pending → accepted → completed`. Un refus mène à
 `rejected`, une annulation à `cancelled`. Un service ne peut avoir qu'une seule
 demande `pending` ou `accepted`.
 
+## Endpoints avis et statistiques
+
+| Méthode | Route | Description | Authentification |
+|---|---|---|---|
+| `POST` | `/api/exchanges/{id}/review` | Laisser un avis après un échange terminé | participant |
+| `GET` | `/api/users/{id}/reviews` | Avis reçus par un utilisateur | Non |
+| `GET` | `/api/services/{id}/reviews` | Avis liés à un service | Non |
+| `GET` | `/api/users/{id}/stats` | Statistiques d'un utilisateur | Non |
+
+Une note est comprise entre 1 et 5. Un utilisateur ne peut laisser qu'un seul
+avis par échange, et un avis est possible uniquement après `completed`.
+
 ## Exemple rapide
 
 Créer un utilisateur :
@@ -110,6 +128,22 @@ curl -X POST http://localhost:8080/api/exchanges \
 
 curl -X PUT http://localhost:8080/api/exchanges/1/accept \
   -H 'X-User-ID: 1'
+```
+
+Terminer, noter et consulter les statistiques :
+
+```bash
+curl -X PUT http://localhost:8080/api/exchanges/1/complete \
+  -H 'X-User-ID: 2'
+
+curl -X POST http://localhost:8080/api/exchanges/1/review \
+  -H 'Content-Type: application/json' \
+  -H 'X-User-ID: 2' \
+  -d '{"note":5,"commentaire":"Très bon service"}'
+
+curl http://localhost:8080/api/users/1/reviews
+curl http://localhost:8080/api/services/1/reviews
+curl http://localhost:8080/api/users/1/stats
 ```
 
 ## Tests et qualité
