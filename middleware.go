@@ -83,3 +83,14 @@ func authMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func timeoutMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		
+		// libère la mémoire du timer
+		defer cancel()
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
