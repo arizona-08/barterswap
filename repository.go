@@ -72,7 +72,11 @@ func migrate(ctx context.Context, db *sql.DB) error {
 				commentaire TEXT NOT NULL DEFAULT '',
 				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 				UNIQUE (exchange_id, author_id)
-			);`
+			);
+			
+			CREATE INDEX IF NOT EXISTS idx_exchanges_status ON exchanges(status);
+			CREATE INDEX IF NOT EXISTS idx_exchanges_status ON exchanges(status);
+			`
 	if _, err := db.ExecContext(ctx, schema); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}
