@@ -21,6 +21,10 @@ Pour arrêter l'environnement :
 docker compose down
 ```
 
+Une collection Postman importable est disponible dans
+`BarterSwap.postman_collection.json`. Elle exécute le parcours complet et
+enregistre automatiquement les IDs créés dans ses variables de collection.
+
 ## Architecture
 
 Le code reste dans un seul package Go, comme demandé dans le sujet :
