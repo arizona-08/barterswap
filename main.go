@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +16,11 @@ import (
 )
 
 func main() {
+	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+	slog.SetDefault(slog.New(jsonHandler))
+
 	port := envOrDefault("PORT", "8080")
 	databaseURL := envOrDefault("DATABASE_URL", "postgres://barterswap:barterswap@localhost:5432/barterswap?sslmode=disable")
 
@@ -64,7 +70,7 @@ func main() {
 	mux.HandleFunc("GET /api/services/{id}/reviews", reviewHandler.ListService)
 	mux.HandleFunc("GET /api/users/{id}/stats", statsHandler.Get)
 
-	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(timeoutMiddleware(authMiddleware(mux)))))
+	handler := recoveryMiddleware(corsMiddleware(authMiddleware(loggingMiddleware(timeoutMiddleware(mux)))))
 
 	server := &http.Server{
 		Addr:              ":" + port,
@@ -81,7 +87,7 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("BarterSwap API listening on http://localhost:%s", port)
+		slog.Info("BarterSwap API listening", slog.String("port", port))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Erreur critique du serveur HTTP : %v", err)
 		}

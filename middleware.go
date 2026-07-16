@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"time"
 	"context"
+	"log/slog"
+	"net/http"
 	"strconv"
+	"time"
 )
 
 type contextKey string
@@ -40,7 +40,20 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		if status == 0 {
 			status = http.StatusOK
 		}
-		log.Printf("%s %s %d %s", r.Method, r.URL.Path, status, time.Since(started))
+		
+		attrs := []any{
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", status),
+			slog.Duration("duration", time.Since(started)),
+		}
+
+		userID, err := authenticatedUserID(r)
+		if err == nil && userID > 0 {
+			attrs = append(attrs, slog.Int("user_id", userID))
+		}
+
+		slog.Info("requête HTTP traitée", attrs...)
 	})
 }
 
@@ -48,7 +61,7 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				log.Printf("panic recovered: %v", recovered)
+				slog.Error("panic recovered", slog.Any("error", recovered))
 				writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "internal server error"})
 			}
 		}()
