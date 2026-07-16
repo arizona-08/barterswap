@@ -1,0 +1,74 @@
+openapi: 3.0.0
+info:
+  title: BarterSwap API
+  description: API de la plateforme de troc de services entre étudiants.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Serveur de développement
+
+paths:
+  /api/users:
+    post:
+      summary: Créer un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Utilisateur créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/services:
+    get:
+      summary: Lister les services
+      parameters:
+        - name: categorie
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Liste des services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id: {type: integer}
+        pseudo: {type: string}
+        bio: {type: string}
+    
+    UserCreate:
+      type: object
+      required: [pseudo]
+      properties:
+        pseudo: {type: string}
+        bio: {type: string}
+        ville: {type: string}
+
+    Service:
+      type: object
+      properties:
+        id: {type: integer}
+        titre: {type: string}
+        categorie: {type: string}
+        credits: {type: integer}
