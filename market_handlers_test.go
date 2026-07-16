@@ -137,7 +137,7 @@ func (s *fakeExchangeStore) CreateExchange(_ context.Context, requesterID, servi
 	return s.exchange, nil
 }
 
-func (s *fakeExchangeStore) ListExchanges(_ context.Context, _ int, _ string) ([]Exchange, error) {
+func (s *fakeExchangeStore) ListExchanges(_ context.Context, _ int, _ string, _ int, _ int) ([]Exchange, error) {
 	return []Exchange{s.exchange}, nil
 }
 
@@ -252,7 +252,7 @@ func TestExchangeLifecycleHandlers(t *testing.T) {
 
 func TestInvalidExchangeStatus(t *testing.T) {
 	service := NewExchangeService(&fakeExchangeStore{})
-	_, err := service.List(context.Background(), 1, "unknown")
+	_, err := service.List(context.Background(), 1, "unknown", 0, 0)
 	if err != ErrInvalidExchangeStatus {
 		t.Fatalf("expected invalid status error, got %v", err)
 	}

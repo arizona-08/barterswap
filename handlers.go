@@ -163,3 +163,19 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	_ = json.NewEncoder(w).Encode(value)
 }
 
+func parsePagination(r *http.Request) (int, int) {
+	limit := 20
+	offset := 0
+
+	if l, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && l > 0 {
+		limit = l
+	}
+	if o, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && o >= 0 {
+		offset = o
+	}
+	// antiDDoS mémoire
+	if limit > 100 {
+		limit = 100
+	}
+	return limit, offset
+}

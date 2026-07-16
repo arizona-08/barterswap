@@ -37,6 +37,8 @@ type ServiceFilters struct {
 	Categorie string
 	Ville     string
 	Search    string
+	Limit     int
+	Offset    int
 }
 
 type Exchange struct {

@@ -34,7 +34,7 @@ func (s *SQLReviewStore) HasReview(ctx context.Context, exchangeID, authorID int
 	return exists, nil
 }
 
-func (s *SQLReviewStore) ListUserReviews(ctx context.Context, userID int) ([]Review, error) {
+func (s *SQLReviewStore) ListUserReviews(ctx context.Context, userID int, limit, offset int) ([]Review, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT id, exchange_id, author_id, target_id, note, commentaire, created_at
 		FROM reviews WHERE target_id = $1 ORDER BY created_at DESC, id DESC`, userID)
 	if err != nil {
@@ -43,7 +43,7 @@ func (s *SQLReviewStore) ListUserReviews(ctx context.Context, userID int) ([]Rev
 	return scanReviews(rows)
 }
 
-func (s *SQLReviewStore) ListServiceReviews(ctx context.Context, serviceID int) ([]Review, error) {
+func (s *SQLReviewStore) ListServiceReviews(ctx context.Context, serviceID int, limit, offset int) ([]Review, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT r.id, r.exchange_id, r.author_id, r.target_id, r.note, r.commentaire, r.created_at
 		FROM reviews r
 		JOIN exchanges e ON e.id = r.exchange_id

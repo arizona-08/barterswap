@@ -24,7 +24,7 @@ var (
 
 type ExchangeStore interface {
 	CreateExchange(context.Context, int, int) (Exchange, error)
-	ListExchanges(context.Context, int, string) ([]Exchange, error)
+	ListExchanges(context.Context, int, string, int, int) ([]Exchange, error)
 	GetExchange(context.Context, int) (Exchange, error)
 	AcceptExchange(context.Context, int, int) (Exchange, error)
 	RejectExchange(context.Context, int, int) (Exchange, error)
@@ -44,11 +44,11 @@ func (s *ExchangeService) Create(ctx context.Context, requesterID, serviceID int
 	return s.store.CreateExchange(ctx, requesterID, serviceID)
 }
 
-func (s *ExchangeService) List(ctx context.Context, userID int, status string) ([]Exchange, error) {
+func (s *ExchangeService) List(ctx context.Context, userID int, status string, limit, offset int) ([]Exchange, error) {
 	if status != "" && !validExchangeStatus(status) {
 		return nil, ErrInvalidExchangeStatus
 	}
-	return s.store.ListExchanges(ctx, userID, status)
+	return s.store.ListExchanges(ctx, userID, status, limit, offset)
 }
 
 func (s *ExchangeService) Get(ctx context.Context, userID, id int) (Exchange, error) {

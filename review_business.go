@@ -17,8 +17,8 @@ var (
 type ReviewStore interface {
 	CreateReview(context.Context, int, int, int, int, string) (Review, error)
 	HasReview(context.Context, int, int) (bool, error)
-	ListUserReviews(context.Context, int) ([]Review, error)
-	ListServiceReviews(context.Context, int) ([]Review, error)
+	ListUserReviews(context.Context, int, int, int) ([]Review, error)
+	ListServiceReviews(context.Context, int, int, int) ([]Review, error)
 }
 
 type ReviewService struct {
@@ -64,16 +64,16 @@ func (s *ReviewService) Create(ctx context.Context, authorID, exchangeID int, in
 	return s.reviews.CreateReview(ctx, exchangeID, authorID, targetID, input.Note, input.Commentaire)
 }
 
-func (s *ReviewService) ListUserReviews(ctx context.Context, userID int) ([]Review, error) {
+func (s *ReviewService) ListUserReviews(ctx context.Context, userID int, limit, offset int) ([]Review, error) {
 	if _, err := s.users.GetUser(ctx, userID); err != nil {
 		return nil, err
 	}
-	return s.reviews.ListUserReviews(ctx, userID)
+	return s.reviews.ListUserReviews(ctx, userID, limit, offset)
 }
 
-func (s *ReviewService) ListServiceReviews(ctx context.Context, serviceID int) ([]Review, error) {
+func (s *ReviewService) ListServiceReviews(ctx context.Context, serviceID int, limit, offset int) ([]Review, error) {
 	if _, err := s.services.GetService(ctx, serviceID); err != nil {
 		return nil, err
 	}
-	return s.reviews.ListServiceReviews(ctx, serviceID)
+	return s.reviews.ListServiceReviews(ctx, serviceID, limit, offset)
 }
