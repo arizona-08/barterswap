@@ -74,7 +74,7 @@ func (s *SQLExchangeStore) CreateExchange(ctx context.Context, requesterID, serv
 	return s.GetExchange(ctx, exchangeID)
 }
 
-func (s *SQLExchangeStore) ListExchanges(ctx context.Context, userID int, status string) ([]Exchange, error) {
+func (s *SQLExchangeStore) ListExchanges(ctx context.Context, userID int, status string, limit, offset int) ([]Exchange, error) {
 	query := `SELECT id, service_id, requester_id, owner_id, status, created_at, updated_at
 		FROM exchanges WHERE (requester_id = $1 OR owner_id = $1)`
 	args := []any{userID}
@@ -84,6 +84,9 @@ func (s *SQLExchangeStore) ListExchanges(ctx context.Context, userID int, status
 	}
 	query += " ORDER BY updated_at DESC, id DESC"
 
+	args = append(args, limit, offset)
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+	
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list exchanges: %w", err)

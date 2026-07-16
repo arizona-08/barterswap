@@ -117,7 +117,7 @@ func TestPostgresServicesAndExchanges(t *testing.T) {
 	if _, err := exchangeService.Create(ctx, requester.ID, service.ID); !errors.Is(err, ErrServiceReserved) {
 		t.Fatalf("expected reserved service error, got %v", err)
 	}
-	if _, err := exchangeService.List(ctx, requester.ID, ExchangePending); err != nil {
+	if _, err := exchangeService.List(ctx, requester.ID, ExchangePending, 20, 0); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := exchangeService.Get(ctx, requester.ID, exchange.ID); err != nil {
@@ -142,10 +142,10 @@ func TestPostgresServicesAndExchanges(t *testing.T) {
 	if _, err := reviewService.Create(ctx, provider.ID, exchange.ID, CreateReviewInput{Note: 4}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := reviewService.ListUserReviews(ctx, provider.ID); err != nil {
+	if _, err := reviewService.ListUserReviews(ctx, provider.ID, 20, 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := reviewService.ListServiceReviews(ctx, service.ID); err != nil {
+	if _, err := reviewService.ListServiceReviews(ctx, service.ID, 20, 0); err != nil {
 		t.Fatal(err)
 	}
 	providerStats, err := statsService.Get(ctx, provider.ID)

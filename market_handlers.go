@@ -14,10 +14,13 @@ func NewServiceHandler(service *ServiceService) *ServiceHandler {
 }
 
 func (h *ServiceHandler) List(w http.ResponseWriter, r *http.Request) {
+	limit, offset := parsePagination(r)
 	services, err := h.service.List(r.Context(), ServiceFilters{
 		Categorie: r.URL.Query().Get("categorie"),
 		Ville:     r.URL.Query().Get("ville"),
 		Search:    r.URL.Query().Get("search"),
+		Limit: limit,
+		Offset: offset,
 	})
 	if err != nil {
 		handleError(w, err)
@@ -131,7 +134,9 @@ func (h *ExchangeHandler) List(w http.ResponseWriter, r *http.Request) {
 		handleError(w, err)
 		return
 	}
-	exchanges, err := h.service.List(r.Context(), userID, r.URL.Query().Get("status"))
+	limit, offset := parsePagination(r)
+	
+	exchanges, err := h.service.List(r.Context(), userID, r.URL.Query().Get("status"), limit, offset)
 	if err != nil {
 		handleError(w, err)
 		return

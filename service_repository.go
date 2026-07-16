@@ -33,7 +33,7 @@ func (s *SQLServiceStore) GetService(ctx context.Context, id int) (Service, erro
 func (s *SQLServiceStore) ListServices(ctx context.Context, filters ServiceFilters) ([]Service, error) {
 	query := `SELECT id, provider_id, titre, description, categorie, duree_minutes, credits, ville, actif, created_at
 		FROM services WHERE actif = TRUE`
-	args := make([]any, 0, 3)
+	args := make([]any, 0, 5)
 	if filters.Categorie != "" {
 		args = append(args, filters.Categorie)
 		query += fmt.Sprintf(" AND categorie = $%d", len(args))
@@ -47,6 +47,9 @@ func (s *SQLServiceStore) ListServices(ctx context.Context, filters ServiceFilte
 		query += fmt.Sprintf(" AND (titre ILIKE $%d OR description ILIKE $%d)", len(args), len(args))
 	}
 	query += " ORDER BY created_at DESC, id DESC"
+
+	args = append(args, filters.Limit, filters.Offset)
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {

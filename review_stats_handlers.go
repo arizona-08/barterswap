@@ -38,7 +38,9 @@ func (h *ReviewHandler) ListUser(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	reviews, err := h.service.ListUserReviews(r.Context(), userID)
+	limit, offset := parsePagination(r)
+	
+	reviews, err := h.service.ListUserReviews(r.Context(), userID, limit, offset)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -51,7 +53,9 @@ func (h *ReviewHandler) ListService(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	reviews, err := h.service.ListServiceReviews(r.Context(), serviceID)
+	limit, offset := parsePagination(r)
+	
+	reviews, err := h.service.ListServiceReviews(r.Context(), serviceID, limit, offset)
 	if err != nil {
 		handleError(w, err)
 		return

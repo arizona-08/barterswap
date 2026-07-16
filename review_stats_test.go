@@ -27,7 +27,7 @@ func (s *fakeReviewStore) HasReview(_ context.Context, exchangeID, authorID int)
 	return false, nil
 }
 
-func (s *fakeReviewStore) ListUserReviews(_ context.Context, userID int) ([]Review, error) {
+func (s *fakeReviewStore) ListUserReviews(_ context.Context, userID int, limit, offset int) ([]Review, error) {
 	result := make([]Review, 0)
 	for _, review := range s.reviews {
 		if review.TargetID == userID {
@@ -37,7 +37,7 @@ func (s *fakeReviewStore) ListUserReviews(_ context.Context, userID int) ([]Revi
 	return result, nil
 }
 
-func (s *fakeReviewStore) ListServiceReviews(_ context.Context, _ int) ([]Review, error) {
+func (s *fakeReviewStore) ListServiceReviews(_ context.Context, _ int, limit, offset int) ([]Review, error) {
 	return s.reviews, nil
 }
 
