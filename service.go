@@ -81,7 +81,7 @@ func (s *UserService) ReplaceSkills(ctx context.Context, authenticatedID, id int
 	seen := make(map[string]bool, len(skills))
 	for i := range skills {
 		skills[i].Nom = sanitizeText(skills[i].Nom, 50)
-		skills[i].Niveau = strings.ToLower(strings.TrimSpace(skills[i].Niveau))
+		skills[i].Niveau = strings.ToLower(sanitizeText(skills[i].Niveau, 20))
 		if skills[i].Nom == "" {
 			return nil, ErrInvalidSkill
 		}
