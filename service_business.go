@@ -29,13 +29,35 @@ var serviceCategories = map[string]bool{
 	"Autre":        true,
 }
 
-type ServiceStore interface {
-	CreateService(context.Context, int, CreateServiceInput) (Service, error)
+
+// type ServiceStore interface {
+// 	CreateService(context.Context, int, CreateServiceInput) (Service, error)
+// 	GetService(context.Context, int) (Service, error)
+// 	ListServices(context.Context, ServiceFilters) ([]Service, error)
+// 	UpdateService(context.Context, int, UpdateServiceInput) (Service, error)
+// 	DeleteService(context.Context, int) error
+// 	HasSkill(context.Context, int, string) (bool, error)
+// }
+
+type ServiceReader interface{
 	GetService(context.Context, int) (Service, error)
 	ListServices(context.Context, ServiceFilters) ([]Service, error)
+}
+
+type ServiceWriter interface {
+	CreateService(context.Context, int, CreateServiceInput) (Service, error)
 	UpdateService(context.Context, int, UpdateServiceInput) (Service, error)
 	DeleteService(context.Context, int) error
+}
+
+type SkillChecker interface {
 	HasSkill(context.Context, int, string) (bool, error)
+}
+
+type ServiceStore interface {
+	ServiceReader
+	ServiceWriter
+	SkillChecker
 }
 
 type ServiceService struct {
