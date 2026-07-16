@@ -202,3 +202,44 @@ func userBalance(t *testing.T, db *sql.DB, id int) int {
 	}
 	return balance
 }
+
+func TestSQLUserStore_CreateUser(t *testing.T) {
+	db := integrationDatabase(t)
+	store := NewSQLUserStore(db)
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		input   CreateUserInput
+		credits int
+		wantErr bool
+	}{
+		{
+			name:    "Succès : utilisateur standard",
+			input:   CreateUserInput{Pseudo: "Alice", Bio: "Dev", Ville: "Paris"},
+			credits: 10,
+			wantErr: false,
+		},
+		{
+			name:    "Succès : utilisateur sans bio ni ville",
+			input:   CreateUserInput{Pseudo: "Bob"},
+			credits: 5,
+			wantErr: false,
+		},
+		{
+			name:    "Échec : pseudo vide (contrainte DB)",
+			input:   CreateUserInput{Pseudo: ""},
+			credits: 10,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := store.CreateUser(ctx, tt.input, tt.credits)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("CreateUser() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
