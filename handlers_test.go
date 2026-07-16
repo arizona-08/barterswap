@@ -49,15 +49,17 @@ func (s *fakeUserStore) ReplaceSkills(_ context.Context, id int, skills []Skill)
 	return skills, nil
 }
 
-func newTestMux(store UserStore) *http.ServeMux {
+func newTestMux(store UserStore) http.Handler {
 	handler := NewUserHandler(NewUserService(store))
 	mux := http.NewServeMux()
+
 	mux.HandleFunc("POST /api/users", handler.Create)
 	mux.HandleFunc("GET /api/users/{id}", handler.Get)
 	mux.HandleFunc("PUT /api/users/{id}", handler.Update)
 	mux.HandleFunc("GET /api/users/{id}/skills", handler.GetSkills)
 	mux.HandleFunc("PUT /api/users/{id}/skills", handler.ReplaceSkills)
-	return mux
+	
+	return authMiddleware(mux)
 }
 
 func TestCreateUser(t *testing.T) {

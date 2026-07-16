@@ -60,7 +60,7 @@ func main() {
 	mux.HandleFunc("GET /api/users/{id}/reviews", reviewHandler.ListUser)
 	mux.HandleFunc("GET /api/services/{id}/reviews", reviewHandler.ListService)
 	mux.HandleFunc("GET /api/users/{id}/stats", statsHandler.Get)
-	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(mux)))
+	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(authMiddleware(mux))))
 
 	server := &http.Server{
 		Addr:              ":" + port,

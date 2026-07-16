@@ -53,7 +53,7 @@ func (s *fakeServiceStore) HasSkill(_ context.Context, userID int, skill string)
 	return s.skills[userID][skill], nil
 }
 
-func newMarketMux(serviceStore ServiceStore, exchangeStore ExchangeStore) *http.ServeMux {
+func newMarketMux(serviceStore ServiceStore, exchangeStore ExchangeStore) http.Handler {
 	serviceHandler := NewServiceHandler(NewServiceService(serviceStore))
 	exchangeHandler := NewExchangeHandler(NewExchangeService(exchangeStore))
 	mux := http.NewServeMux()
@@ -69,7 +69,7 @@ func newMarketMux(serviceStore ServiceStore, exchangeStore ExchangeStore) *http.
 	mux.HandleFunc("PUT /api/exchanges/{id}/reject", exchangeHandler.Reject)
 	mux.HandleFunc("PUT /api/exchanges/{id}/complete", exchangeHandler.Complete)
 	mux.HandleFunc("PUT /api/exchanges/{id}/cancel", exchangeHandler.Cancel)
-	return mux
+	return authMiddleware(mux)
 }
 
 func TestCreateServiceRequiresProviderSkill(t *testing.T) {

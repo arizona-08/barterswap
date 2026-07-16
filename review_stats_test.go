@@ -50,7 +50,7 @@ func (s *fakeStatsStore) GetUserStats(_ context.Context, userID int) (UserStats,
 	return s.stats, nil
 }
 
-func newReviewStatsMux(reviewService *ReviewService, statsService *StatsService) *http.ServeMux {
+func newReviewStatsMux(reviewService *ReviewService, statsService *StatsService) http.Handler {
 	reviewHandler := NewReviewHandler(reviewService)
 	statsHandler := NewStatsHandler(statsService)
 	mux := http.NewServeMux()
@@ -58,7 +58,7 @@ func newReviewStatsMux(reviewService *ReviewService, statsService *StatsService)
 	mux.HandleFunc("GET /api/users/{id}/reviews", reviewHandler.ListUser)
 	mux.HandleFunc("GET /api/services/{id}/reviews", reviewHandler.ListService)
 	mux.HandleFunc("GET /api/users/{id}/stats", statsHandler.Get)
-	return mux
+	return authMiddleware(mux)
 }
 
 func TestReviewRulesAndRoutes(t *testing.T) {
@@ -154,5 +154,37 @@ func TestSimpleMiddlewares(t *testing.T) {
 	})).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/log", nil))
 	if response.Code != http.StatusAccepted {
 		t.Fatalf("expected logging middleware to preserve status, got %d", response.Code)
+	}
+}
+
+func TestAuthMiddleware(t *testing.T) {
+	dummyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, err := authenticatedUserID(r)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]int{"id": id})
+	})
+
+	handlerUnderTest := authMiddleware(dummyHandler)
+
+	// Sans header X-User-ID (doit échouer côté Handler)
+	requestNoHeader := httptest.NewRequest(http.MethodGet, "/test", nil)
+	responseNoHeader := httptest.NewRecorder()
+	handlerUnderTest.ServeHTTP(responseNoHeader, requestNoHeader)
+
+	if responseNoHeader.Code != http.StatusUnauthorized {
+		t.Fatalf("attendu 401 Unauthorized sans header, reçu %d", responseNoHeader.Code)
+	}
+
+	// X-User-ID valide
+	requestWithHeader := httptest.NewRequest(http.MethodGet, "/test", nil)
+	requestWithHeader.Header.Set("X-User-ID", "42")
+	responseWithHeader := httptest.NewRecorder()
+	handlerUnderTest.ServeHTTP(responseWithHeader, requestWithHeader)
+
+	if responseWithHeader.Code != http.StatusOK || !strings.Contains(responseWithHeader.Body.String(), `"id":42`) {
+		t.Fatalf("attendu 200 OK avec l'id 42, reçu %d : %s", responseWithHeader.Code, responseWithHeader.Body.String())
 	}
 }
