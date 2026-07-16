@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type UserHandler struct {
@@ -178,4 +179,13 @@ func parsePagination(r *http.Request) (int, int) {
 		limit = 100
 	}
 	return limit, offset
+}
+
+func sanitizeText(s string, max int) string {
+	s = strings.TrimSpace(s)
+	runes := []rune(s)
+	if len(runes) > max {
+		return string(runes[:max])
+	}
+	return s
 }

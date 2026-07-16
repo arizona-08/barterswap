@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"strings"
 )
 
 var (
@@ -48,10 +47,10 @@ func NewServiceService(store ServiceStore) *ServiceService {
 }
 
 func (s *ServiceService) Create(ctx context.Context, providerID int, input CreateServiceInput) (Service, error) {
-	input.Titre = strings.TrimSpace(input.Titre)
-	input.Description = strings.TrimSpace(input.Description)
-	input.Categorie = strings.TrimSpace(input.Categorie)
-	input.Ville = strings.TrimSpace(input.Ville)
+	input.Titre = sanitizeText(input.Titre, 100)
+	input.Description = sanitizeText(input.Description, 1000)
+	input.Categorie = sanitizeText(input.Categorie, 50)
+	input.Ville = sanitizeText(input.Ville, 100)
 	if err := validateServiceInput(input.Titre, input.Categorie, input.DureeMinutes, input.Credits); err != nil {
 		return Service{}, err
 	}
@@ -73,9 +72,9 @@ func (s *ServiceService) Get(ctx context.Context, id int) (Service, error) {
 }
 
 func (s *ServiceService) List(ctx context.Context, filters ServiceFilters) ([]Service, error) {
-	filters.Categorie = strings.TrimSpace(filters.Categorie)
-	filters.Ville = strings.TrimSpace(filters.Ville)
-	filters.Search = strings.TrimSpace(filters.Search)
+	filters.Categorie = sanitizeText(filters.Categorie, 50)
+	filters.Ville = sanitizeText(filters.Ville, 100)
+	filters.Search = sanitizeText(filters.Search, 100)
 	return s.store.ListServices(ctx, filters)
 }
 
@@ -87,10 +86,10 @@ func (s *ServiceService) Update(ctx context.Context, providerID, id int, input U
 	if service.ProviderID != providerID {
 		return Service{}, ErrForbidden
 	}
-	input.Titre = strings.TrimSpace(input.Titre)
-	input.Description = strings.TrimSpace(input.Description)
-	input.Categorie = strings.TrimSpace(input.Categorie)
-	input.Ville = strings.TrimSpace(input.Ville)
+	input.Titre = sanitizeText(input.Titre, 100)
+	input.Description = sanitizeText(input.Description, 1000)
+	input.Categorie = sanitizeText(input.Categorie, 50)
+	input.Ville = sanitizeText(input.Ville, 100)
 	if err := validateServiceInput(input.Titre, input.Categorie, input.DureeMinutes, input.Credits); err != nil {
 		return Service{}, err
 	}

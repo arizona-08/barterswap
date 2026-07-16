@@ -35,9 +35,9 @@ func NewUserService(store UserStore) *UserService {
 }
 
 func (s *UserService) Create(ctx context.Context, input CreateUserInput) (User, error) {
-	input.Pseudo = strings.TrimSpace(input.Pseudo)
-	input.Bio = strings.TrimSpace(input.Bio)
-	input.Ville = strings.TrimSpace(input.Ville)
+	input.Pseudo = sanitizeText(input.Pseudo, 50)
+	input.Bio = sanitizeText(input.Bio, 500)
+	input.Ville = sanitizeText(input.Ville, 100)
 	if input.Pseudo == "" {
 		return User{}, ErrEmptyPseudo
 	}
@@ -61,9 +61,9 @@ func (s *UserService) Update(ctx context.Context, authenticatedID, id int, input
 	if authenticatedID != id {
 		return User{}, ErrForbidden
 	}
-	input.Pseudo = strings.TrimSpace(input.Pseudo)
-	input.Bio = strings.TrimSpace(input.Bio)
-	input.Ville = strings.TrimSpace(input.Ville)
+	input.Pseudo = sanitizeText(input.Pseudo, 50)
+	input.Bio = sanitizeText(input.Bio, 500)
+	input.Ville = sanitizeText(input.Ville, 100)
 	if input.Pseudo == "" {
 		return User{}, ErrEmptyPseudo
 	}
@@ -80,7 +80,7 @@ func (s *UserService) ReplaceSkills(ctx context.Context, authenticatedID, id int
 	}
 	seen := make(map[string]bool, len(skills))
 	for i := range skills {
-		skills[i].Nom = strings.TrimSpace(skills[i].Nom)
+		skills[i].Nom = sanitizeText(skills[i].Nom, 50)
 		skills[i].Niveau = strings.ToLower(strings.TrimSpace(skills[i].Niveau))
 		if skills[i].Nom == "" {
 			return nil, ErrInvalidSkill
