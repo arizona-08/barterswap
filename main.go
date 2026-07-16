@@ -6,9 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"time"
-
+	"syscall"
 	_ "github.com/lib/pq"
+
+	
 )
 
 func main() {
@@ -60,6 +63,7 @@ func main() {
 	mux.HandleFunc("GET /api/users/{id}/reviews", reviewHandler.ListUser)
 	mux.HandleFunc("GET /api/services/{id}/reviews", reviewHandler.ListService)
 	mux.HandleFunc("GET /api/users/{id}/stats", statsHandler.Get)
+
 	handler := recoveryMiddleware(loggingMiddleware(corsMiddleware(authMiddleware(mux))))
 
 	server := &http.Server{
@@ -70,11 +74,32 @@ func main() {
 		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
+	
+	// intercepter signaux système
+	stop := make(chan os.Signal, 1)
+	// SIGINT et SIGTERM
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	log.Printf("BarterSwap API listening on http://localhost:%s", port)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+	go func() {
+		log.Printf("BarterSwap API listening on http://localhost:%s", port)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Erreur critique du serveur HTTP : %v", err)
+		}
+	}()
+	<-stop
+
+	// vider connexions actives
+	shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancelShutdown()
+
+	// Demande d'arrêt propre au serveur HTTP
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Erreur lors de la fermeture du serveur : %v", err)
+	} else {
+		log.Println("Le serveur HTTP a traité toutes les requêtes en cours et s'est arrêté proprement.")
 	}
+
+	log.Println("Fermeture de la base de données et fin définitive du programme.")
 }
 
 func envOrDefault(name, fallback string) string {
