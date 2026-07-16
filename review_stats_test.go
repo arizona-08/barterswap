@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 type fakeReviewStore struct {
@@ -186,5 +187,31 @@ func TestAuthMiddleware(t *testing.T) {
 
 	if responseWithHeader.Code != http.StatusOK || !strings.Contains(responseWithHeader.Body.String(), `"id":42`) {
 		t.Fatalf("attendu 200 OK avec l'id 42, reçu %d : %s", responseWithHeader.Code, responseWithHeader.Body.String())
+	}
+}
+
+func TestTimeoutMiddleware(t *testing.T) {
+	dummyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		deadline, ok := r.Context().Deadline()
+		if !ok {
+			t.Fatal("attendu une deadline dans le contexte, mais aucune n'a été trouvée")
+		}
+		
+		importTime := time.Until(deadline)
+		if importTime > 5*time.Second+100*time.Millisecond {
+			t.Fatalf("deadline trop éloignée: %v", importTime)
+		}
+		
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handlerUnderTest := timeoutMiddleware(dummyHandler)
+	request := httptest.NewRequest(http.MethodGet, "/test", nil)
+	response := httptest.NewRecorder()
+
+	handlerUnderTest.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("attendu 200 OK, reçu %d", response.Code)
 	}
 }
