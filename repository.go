@@ -75,7 +75,6 @@ func migrate(ctx context.Context, db *sql.DB) error {
 			);
 			
 			CREATE INDEX IF NOT EXISTS idx_exchanges_status ON exchanges(status);
-			CREATE INDEX IF NOT EXISTS idx_exchanges_status ON exchanges(status);
 			`
 	if _, err := db.ExecContext(ctx, schema); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
