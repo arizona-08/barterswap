@@ -1,238 +1,266 @@
 {
   "info": {
-    "_postman_id": "9f9a9d9c-4c8c-4d65-a2ba-barterswap75",
-    "name": "BarterSwap API - demonstration complete",
-    "description": "Collection de démonstration pour l'API BarterSwap. Lance les dossiers dans l'ordre. Les IDs sont enregistrés automatiquement dans les variables de collection.",
+    "_postman_id": "9f9a9d9c-4c8c-4d65-a2ba-barterswap-existing-data",
+    "name": "BarterSwap API - données existantes",
+    "description": "Collection Postman basée uniquement sur des données déjà présentes en base. Aucune création d'utilisateur/service/échange n'est effectuée.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080" },
     { "key": "providerId", "value": "" },
-    { "key": "requesterId", "value": "" },
-    { "key": "serviceId", "value": "" },
-    { "key": "secondServiceId", "value": "" },
-    { "key": "deleteServiceId", "value": "" },
-    { "key": "exchangeId", "value": "" },
-    { "key": "rejectExchangeId", "value": "" },
-    { "key": "cancelExchangeId", "value": "" }
+    { "key": "serviceId", "value": "" }
   ],
   "item": [
     {
-      "name": "1 - Utilisateurs et compétences",
+      "name": "1 - Bootstrap depuis la BDD",
       "item": [
         {
-          "name": "Créer le fournisseur",
+          "name": "Lister les services existants (sélectionne le premier)",
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"pseudo\": \"Postman Provider\",\n  \"bio\": \"Je propose des services.\",\n  \"ville\": \"Paris\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] }
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "services"],
+              "query": [
+                { "key": "limit", "value": "50" }
+              ]
+            }
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Création fournisseur: 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('providerId', pm.response.json().id);"] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Liste services: 200', function () { pm.response.to.have.status(200); });",
+                  "const services = pm.response.json();",
+                  "pm.test('Au moins un service existe en BDD', function () { pm.expect(Array.isArray(services) && services.length > 0, 'Aucun service trouvé en base.').to.eql(true); });",
+                  "if (Array.isArray(services) && services.length > 0) {",
+                  "  const selected = services[0];",
+                  "  pm.collectionVariables.set('serviceId', String(selected.id));",
+                  "  pm.collectionVariables.set('providerId', String(selected.provider_id));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "Créer le demandeur",
+          "name": "Consulter le service sélectionné",
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"pseudo\": \"Postman Requester\",\n  \"bio\": \"Je demande des services.\",\n  \"ville\": \"Lyon\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] }
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/{{serviceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "services", "{{serviceId}}"]
+            }
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Création demandeur: 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('requesterId', pm.response.json().id);"] } }]
-        },
-        {
-          "name": "Consulter le profil du fournisseur",
-          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/users/{{providerId}}", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{providerId}}"] } }
-        },
-        {
-          "name": "Définir les compétences du fournisseur",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{providerId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"skills\": [\n    {\"nom\": \"Cuisine\", \"niveau\": \"expert\"},\n    {\"nom\": \"Jardinage\", \"niveau\": \"intermédiaire\"}\n  ]\n}" },
-            "url": { "raw": "{{baseUrl}}/api/users/{{providerId}}/skills", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{providerId}}", "skills"] }
-          }
-        },
-        {
-          "name": "Consulter les compétences",
-          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/users/{{providerId}}/skills", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{providerId}}", "skills"] } }
-        },
-        {
-          "name": "Modifier le profil du demandeur",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{requesterId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"pseudo\": \"Postman Requester Updated\",\n  \"bio\": \"Profil modifié depuis Postman.\",\n  \"ville\": \"Lille\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/users/{{requesterId}}", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{requesterId}}"] }
-          }
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Service sélectionné: 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "2 - Services",
+      "name": "2 - Utilisateur fournisseur",
       "item": [
         {
-          "name": "Créer le service principal",
+          "name": "Consulter le profil fournisseur",
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{providerId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"titre\": \"Cours de cuisine\",\n  \"description\": \"Apprendre une recette simple.\",\n  \"categorie\": \"Cuisine\",\n  \"duree_minutes\": 60,\n  \"credits\": 2,\n  \"ville\": \"Paris\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/services", "host": ["{{baseUrl}}"], "path": ["api", "services"] }
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{providerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{providerId}}"]
+            }
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Création service: 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('serviceId', pm.response.json().id);"] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Profil fournisseur: 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "Créer un second service",
+          "name": "Consulter les compétences du fournisseur",
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{providerId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"titre\": \"Jardinage rapide\",\n  \"description\": \"Aide pour une petite tâche.\",\n  \"categorie\": \"Jardinage\",\n  \"duree_minutes\": 30,\n  \"credits\": 1,\n  \"ville\": \"Paris\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/services", "host": ["{{baseUrl}}"], "path": ["api", "services"] }
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{providerId}}/skills",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{providerId}}", "skills"]
+            }
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('secondServiceId', pm.response.json().id);"] } }]
-        },
-        {
-          "name": "Créer un service à supprimer",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{providerId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"titre\": \"Service temporaire\",\n  \"description\": \"Utilisé pour tester DELETE.\",\n  \"categorie\": \"Cuisine\",\n  \"duree_minutes\": 30,\n  \"credits\": 1,\n  \"ville\": \"Paris\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/services", "host": ["{{baseUrl}}"], "path": ["api", "services"] }
-          },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('deleteServiceId', pm.response.json().id);"] } }]
-        },
-        {
-          "name": "Lister les services avec filtres",
-          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/services?categorie=Cuisine&ville=Paris&search=cuisine", "host": ["{{baseUrl}}"], "path": ["api", "services"], "query": [{ "key": "categorie", "value": "Cuisine" }, { "key": "ville", "value": "Paris" }, { "key": "search", "value": "cuisine" }] } }
-        },
-        {
-          "name": "Consulter le service principal",
-          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/services/{{serviceId}}", "host": ["{{baseUrl}}"], "path": ["api", "services", "{{serviceId}}"] } }
-        },
-        {
-          "name": "Modifier le service principal",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{providerId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"titre\": \"Cours de cuisine avancé\",\n  \"description\": \"Une recette plus complète.\",\n  \"categorie\": \"Cuisine\",\n  \"duree_minutes\": 90,\n  \"credits\": 2,\n  \"ville\": \"Paris\",\n  \"actif\": true\n}" },
-            "url": { "raw": "{{baseUrl}}/api/services/{{serviceId}}", "host": ["{{baseUrl}}"], "path": ["api", "services", "{{serviceId}}"] }
-          }
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Skills fournisseur: 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "3 - Échange accepté et terminé",
+      "name": "3 - Services et filtres",
       "item": [
         {
-          "name": "Créer une demande d'échange",
+          "name": "Lister les services (général)",
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{requesterId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"service_id\": {{serviceId}}\n}" },
-            "url": { "raw": "{{baseUrl}}/api/exchanges", "host": ["{{baseUrl}}"], "path": ["api", "exchanges"] }
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "services"],
+              "query": [
+                { "key": "limit", "value": "20" }
+              ]
+            }
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Création échange: 201', function () { pm.response.to.have.status(201); });", "pm.collectionVariables.set('exchangeId', pm.response.json().id);"] } }]
-        },
-        {
-          "name": "Lister les échanges du demandeur",
-          "request": { "method": "GET", "header": [{ "key": "X-User-ID", "value": "{{requesterId}}" }], "url": { "raw": "{{baseUrl}}/api/exchanges?status=pending", "host": ["{{baseUrl}}"], "path": ["api", "exchanges"], "query": [{ "key": "status", "value": "pending" }] } }
-        },
-        {
-          "name": "Accepter et bloquer les crédits",
-          "request": { "method": "PUT", "header": [{ "key": "X-User-ID", "value": "{{providerId}}" }], "url": { "raw": "{{baseUrl}}/api/exchanges/{{exchangeId}}/accept", "host": ["{{baseUrl}}"], "path": ["api", "exchanges", "{{exchangeId}}", "accept"] } }
-        },
-        {
-          "name": "Consulter l'échange accepté",
-          "request": { "method": "GET", "header": [{ "key": "X-User-ID", "value": "{{requesterId}}" }], "url": { "raw": "{{baseUrl}}/api/exchanges/{{exchangeId}}", "host": ["{{baseUrl}}"], "path": ["api", "exchanges", "{{exchangeId}}"] } }
-        },
-        {
-          "name": "Terminer et transférer les crédits",
-          "request": { "method": "PUT", "header": [{ "key": "X-User-ID", "value": "{{requesterId}}" }], "url": { "raw": "{{baseUrl}}/api/exchanges/{{exchangeId}}/complete", "host": ["{{baseUrl}}"], "path": ["api", "exchanges", "{{exchangeId}}", "complete"] } }
-        }
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Liste services (général): 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+          }
       ]
     },
     {
-      "name": "4 - Avis et statistiques",
+      "name": "4 - Echanges et avis existants",
       "item": [
         {
-          "name": "Avis du demandeur",
+          "name": "Lister les échanges du fournisseur",
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{requesterId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"note\": 5,\n  \"commentaire\": \"Très bon service.\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/exchanges/{{exchangeId}}/review", "host": ["{{baseUrl}}"], "path": ["api", "exchanges", "{{exchangeId}}", "review"] }
-          }
-        },
-        {
-          "name": "Avis du fournisseur",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{providerId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"note\": 4,\n  \"commentaire\": \"Demandeur sérieux.\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/exchanges/{{exchangeId}}/review", "host": ["{{baseUrl}}"], "path": ["api", "exchanges", "{{exchangeId}}", "review"] }
-          }
+            "method": "GET",
+            "header": [
+              { "key": "X-User-ID", "value": "{{providerId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/exchanges?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "exchanges"],
+              "query": [
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Liste échanges: 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Avis reçus par le fournisseur",
-          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/users/{{providerId}}/reviews", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{providerId}}", "reviews"] } }
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{providerId}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{providerId}}", "reviews"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Avis utilisateur: 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "Avis liés au service",
-          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/services/{{serviceId}}/reviews", "host": ["{{baseUrl}}"], "path": ["api", "services", "{{serviceId}}", "reviews"] } }
-        },
+          "name": "Avis liés au service sélectionné",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/services/{{serviceId}}/reviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "services", "{{serviceId}}", "reviews"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Avis service: 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 - Statistiques et middleware",
+      "item": [
         {
           "name": "Statistiques du fournisseur",
-          "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/users/{{providerId}}/stats", "host": ["{{baseUrl}}"], "path": ["api", "users", "{{providerId}}", "stats"] } }
-        }
-      ]
-    },
-    {
-      "name": "5 - Refus, annulation et suppression",
-      "item": [
-        {
-          "name": "Créer une demande à refuser",
           "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{requesterId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"service_id\": {{secondServiceId}}\n}" },
-            "url": { "raw": "{{baseUrl}}/api/exchanges", "host": ["{{baseUrl}}"], "path": ["api", "exchanges"] }
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{providerId}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{providerId}}", "stats"]
+            }
           },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('rejectExchangeId', pm.response.json().id);"] } }]
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Stats fournisseur: 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         },
-        {
-          "name": "Refuser la demande",
-          "request": { "method": "PUT", "header": [{ "key": "X-User-ID", "value": "{{providerId}}" }], "url": { "raw": "{{baseUrl}}/api/exchanges/{{rejectExchangeId}}/reject", "host": ["{{baseUrl}}"], "path": ["api", "exchanges", "{{rejectExchangeId}}", "reject"] } }
-        },
-        {
-          "name": "Créer une demande à annuler",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-User-ID", "value": "{{requesterId}}" }],
-            "body": { "mode": "raw", "raw": "{\n  \"service_id\": {{secondServiceId}}\n}" },
-            "url": { "raw": "{{baseUrl}}/api/exchanges", "host": ["{{baseUrl}}"], "path": ["api", "exchanges"] }
-          },
-          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('cancelExchangeId', pm.response.json().id);"] } }]
-        },
-        {
-          "name": "Accepter la demande à annuler",
-          "request": { "method": "PUT", "header": [{ "key": "X-User-ID", "value": "{{providerId}}" }], "url": { "raw": "{{baseUrl}}/api/exchanges/{{cancelExchangeId}}/accept", "host": ["{{baseUrl}}"], "path": ["api", "exchanges", "{{cancelExchangeId}}", "accept"] } }
-        },
-        {
-          "name": "Annuler et rembourser",
-          "request": { "method": "PUT", "header": [{ "key": "X-User-ID", "value": "{{requesterId}}" }], "url": { "raw": "{{baseUrl}}/api/exchanges/{{cancelExchangeId}}/cancel", "host": ["{{baseUrl}}"], "path": ["api", "exchanges", "{{cancelExchangeId}}", "cancel"] } }
-        },
-        {
-          "name": "Supprimer le service temporaire",
-          "request": { "method": "DELETE", "header": [{ "key": "X-User-ID", "value": "{{providerId}}" }], "url": { "raw": "{{baseUrl}}/api/services/{{deleteServiceId}}", "host": ["{{baseUrl}}"], "path": ["api", "services", "{{deleteServiceId}}"] } }
-        }
-      ]
-    },
-    {
-      "name": "6 - Middleware CORS",
-      "item": [
         {
           "name": "OPTIONS preflight",
-          "request": { "method": "OPTIONS", "header": [], "url": { "raw": "{{baseUrl}}/api/users", "host": ["{{baseUrl}}"], "path": ["api", "users"] } }
+          "request": {
+            "method": "OPTIONS",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            }
+          }
         }
       ]
     }
