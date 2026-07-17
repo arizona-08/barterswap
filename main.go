@@ -26,7 +26,7 @@ func main() {
 
 	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("open database: %v", err)
 	}
 	defer db.Close()
 
@@ -36,7 +36,7 @@ func main() {
 		log.Fatalf("connect to database: %v", err)
 	}
 	if err := migrate(ctx, db); err != nil {
-		log.Fatal(err)
+		log.Fatalf("migrate database: %v", err)
 	}
 
 	userStore := NewSQLUserStore(db)
@@ -89,7 +89,7 @@ func main() {
 	go func() {
 		slog.Info("BarterSwap API listening", slog.String("port", port))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Erreur critique du serveur HTTP : %v", err)
+			log.Fatalf("critical HTTP server error: %v", err)
 		}
 	}()
 	<-stop
@@ -100,12 +100,12 @@ func main() {
 
 	// Demande d'arrêt propre au serveur HTTP
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Erreur lors de la fermeture du serveur : %v", err)
+		log.Printf("server shutdown error: %v", err)
 	} else {
-		log.Println("Le serveur HTTP a traité toutes les requêtes en cours et s'est arrêté proprement.")
+		log.Println("HTTP server stopped gracefully after completing active requests.")
 	}
 
-	log.Println("Fermeture de la base de données et fin définitive du programme.")
+	log.Println("Closing database and exiting.")
 }
 
 func envOrDefault(name, fallback string) string {

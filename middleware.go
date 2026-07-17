@@ -53,7 +53,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 			attrs = append(attrs, slog.Int("user_id", userID))
 		}
 
-		slog.Info("requête HTTP traitée", attrs...)
+		slog.Info("HTTP request handled", attrs...)
 	})
 }
 

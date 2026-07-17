@@ -176,7 +176,7 @@ func TestAuthMiddleware(t *testing.T) {
 	handlerUnderTest.ServeHTTP(responseNoHeader, requestNoHeader)
 
 	if responseNoHeader.Code != http.StatusUnauthorized {
-		t.Fatalf("attendu 401 Unauthorized sans header, reçu %d", responseNoHeader.Code)
+		t.Fatalf("expected 401 Unauthorized without header, got %d", responseNoHeader.Code)
 	}
 
 	// X-User-ID valide
@@ -186,7 +186,7 @@ func TestAuthMiddleware(t *testing.T) {
 	handlerUnderTest.ServeHTTP(responseWithHeader, requestWithHeader)
 
 	if responseWithHeader.Code != http.StatusOK || !strings.Contains(responseWithHeader.Body.String(), `"id":42`) {
-		t.Fatalf("attendu 200 OK avec l'id 42, reçu %d : %s", responseWithHeader.Code, responseWithHeader.Body.String())
+		t.Fatalf("expected 200 OK with user id 42, got %d: %s", responseWithHeader.Code, responseWithHeader.Body.String())
 	}
 }
 
@@ -194,12 +194,12 @@ func TestTimeoutMiddleware(t *testing.T) {
 	dummyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		deadline, ok := r.Context().Deadline()
 		if !ok {
-			t.Fatal("attendu une deadline dans le contexte, mais aucune n'a été trouvée")
+			t.Fatal("expected a context deadline, but none was found")
 		}
 		
 		importTime := time.Until(deadline)
 		if importTime > 5*time.Second+100*time.Millisecond {
-			t.Fatalf("deadline trop éloignée: %v", importTime)
+			t.Fatalf("deadline is too far away: %v", importTime)
 		}
 		
 		w.WriteHeader(http.StatusOK)
@@ -212,6 +212,6 @@ func TestTimeoutMiddleware(t *testing.T) {
 	handlerUnderTest.ServeHTTP(response, request)
 
 	if response.Code != http.StatusOK {
-		t.Fatalf("attendu 200 OK, reçu %d", response.Code)
+		t.Fatalf("expected 200 OK, got %d", response.Code)
 	}
 }

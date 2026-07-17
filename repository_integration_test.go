@@ -215,19 +215,19 @@ func TestSQLUserStore_CreateUser(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Succès : utilisateur standard",
+			name:    "Success: standard user",
 			input:   CreateUserInput{Pseudo: "Alice", Bio: "Dev", Ville: "Paris"},
 			credits: 10,
 			wantErr: false,
 		},
 		{
-			name:    "Succès : utilisateur sans bio ni ville",
+			name:    "Success: user without bio or city",
 			input:   CreateUserInput{Pseudo: "Bob"},
 			credits: 5,
 			wantErr: false,
 		},
 		{
-			name:    "Échec : pseudo vide (contrainte DB)",
+			name:    "Failure: empty pseudo (database constraint)",
 			input:   CreateUserInput{Pseudo: ""},
 			credits: 10,
 			wantErr: true,

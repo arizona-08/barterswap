@@ -13,7 +13,7 @@ var (
 	ErrEmptyPseudo     = errors.New("pseudo must not be empty")
 	ErrInvalidSkill    = errors.New("skill name must not be empty")
 	ErrDuplicateSkill  = errors.New("skill names must be unique")
-	ErrInvalidLevel    = errors.New("niveau must be débutant, intermédiaire or expert")
+	ErrInvalidLevel    = errors.New("level must be 'débutant', 'intermédiaire' or 'expert'")
 	ErrUnauthenticated = errors.New("missing or invalid X-User-ID header")
 	ErrForbidden       = errors.New("you can only modify your own profile")
 )
